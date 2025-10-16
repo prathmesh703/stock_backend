@@ -14,8 +14,7 @@ datasource db {
 }
 
 model Product{
-  id    Int     @id @default(autoincrement())
-  sku String 
+  sku String @id @unique
   name String
   brand String
   color String

@@ -17,8 +17,25 @@ const port = process.env.PORT || 5000;
 
 const upload = multer({ dest: 'uploads/' })
 
-app.get("/",(req,res)=>{
-    return res.json({msg:"working"});
+app.get("/products",async (req,res)=>{
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const total = await prisma.product.count();
+    const skip = (page - 1) * limit;
+    const data = await prisma.product.findMany({
+            skip:skip,
+            take: limit,
+            orderBy: { sku: "asc" }, // optional sorting
+        });
+    const totalPages = Math.ceil(total / limit);
+    console.log(data);
+    return res.json({
+        pageNumber: page, 
+        totalRecords:total,
+        limitOnSinglePage: limit,
+        totalPages,
+        data:data
+    })
 })
 
 app.post("/uploads", upload.single("file"),async (req,res)=>{
@@ -47,7 +64,7 @@ app.post("/uploads", upload.single("file"),async (req,res)=>{
             const validationErrors = validateProduct(product);
             if (validationErrors.length > 0) {
                 failed.push({
-                    row: i + 2,
+                    row: i + 1,
                     errors: validationErrors
                 });
                 continue;
@@ -70,7 +87,7 @@ app.post("/uploads", upload.single("file"),async (req,res)=>{
             } catch (dbErr) {
                 console.log(dbErr);
                 failed.push({
-                    row: i + 2,
+                    row: i + 1,
                     errors: [dbErr.message],
                 });
             }
@@ -90,7 +107,49 @@ app.post("/uploads", upload.single("file"),async (req,res)=>{
 
 })
 
+app.get("/products/search",async (req,res)=>{
+   const { brand, color, minPrice, maxPrice } = req.query;
 
+// const where = {};
+
+// if (brand) {
+//   where.brand = {
+//     contains: brand.trim().replace(/\s+/g, ' '),
+//     mode: 'insensitive'
+//   };
+// }
+
+// if (color) {
+//   where.color = { equals: color, mode: 'insensitive' };
+// }
+
+// if (minPrice || maxPrice) {
+//   where.price = {
+//     ...(minPrice && { gte: parseInt(minPrice) }),
+//     ...(maxPrice && { lte: parseInt(maxPrice) }),
+//   };
+// }
+
+const data = await prisma.product.findMany({
+    where:{
+        brand:{
+            contains:brand,
+            mode:"insensitive"
+        },
+        color:{
+            contains:color,
+            mode:"insensitive"
+        },
+        price:{
+            gte:minPrice,
+            lte:maxPrice
+        }
+    }
+ });
+ return res.json({
+    data
+ })
+} )
 
 app.listen(port, ()=>{
     console.log("server started",port);
