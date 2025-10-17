@@ -1,4 +1,4 @@
-export const validateProduct = (product) => {
+const validateProduct = (product) => {
     const error =[];
    const { sku, name, brand } = product;
     const quantity = parseInt(product.quantity);
@@ -18,3 +18,4 @@ export const validateProduct = (product) => {
     return error;
 };
 
+module.exports = { validateProduct };
